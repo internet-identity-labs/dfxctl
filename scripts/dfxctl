@@ -1,0 +1,215 @@
+#!/bin/bash
+
+DFX_PROJECTS_DIR="${DFX_PROJECTS_DIR:-/Projects}"
+
+FONT_RED='\033[1;31m'
+FONT_GREEN='\033[1;32m'
+FONT_YELLOW='\033[1;33m'
+FONT_BLUE='\033[1;34m'
+FONT_PURPLE='\033[1;35m'
+FONT_CYAN='\033[1;36m'
+FONT_RESET='\033[0m'
+
+function send_mesage() {
+    local message_color message_type message_text
+    message_color="${1}"
+    message_type="${2:-UNDEF}"
+    message_text="${3}"
+
+    echo -e "${message_color} $(date '+%F %T') [${message_type}] ${message_text} ${FONT_RESET}"
+}
+
+function echo_error() {
+    local message
+    message="${1}"
+    send_mesage "${FONT_RED}" 'ERROR' "${message}"
+}
+
+function echo_warn() {
+    local message
+    message="${1}"
+    send_mesage "${FONT_YELLOW}" 'WARN ' "${message}"
+}
+
+function echo_info() {
+    local message
+    message="${1}"
+    send_mesage "${FONT_CYAN}" 'INFO ' "${message}"
+}
+
+function echo_debug() {
+    local message
+    message="${1}"
+    if [ "${DEBUG}" == 'true' ]; then
+        send_mesage "${FONT_BLUE}" 'DEBUG' "${message}"
+    fi
+}
+
+function echo_success() {
+    local message
+    message="${1}"
+    send_mesage "${FONT_GREEN}" ' OK  ' "${message}"
+}
+
+function Help() {
+    # Display Help
+    echo_info "DFX Controller script."
+    echo
+    echo "Syntax: $0 [-h|--help] (start|stop|status|delete|clean|list) project_name"
+    echo "options:"
+    echo -e "help      \t      Print this Help."
+    echo -e "start      \t      Start your project in dfx."
+    echo -e "stop      \t      Stop your project in dfx."
+    echo -e "status      \t      Status of canisters in your project."
+    echo -e "delete      \t      Delete canisters from the project."
+    echo -e "clean      \t      Clean your dfx folder."
+    echo -e "list      \t      List of projects."
+    echo
+}
+
+function Check_Project_Name() {
+    if [ -z "${1}" ];then
+        echo_error "Please provide project name"
+        return 1
+    fi
+}
+
+function Start() {
+    local project
+    project="${1}"
+    Check_Project_Name "${1}" || return 1
+
+    echo_info "Starting Project: ${project}"
+
+    if pushd "${DFX_PROJECTS_DIR}/${project}" > /dev/null 2>&1; then
+        dfx deploy
+        popd > /dev/null 2>&1 || return 1
+    else
+        echo_error "Can't find project: ${project} in ${DFX_PROJECTS_DIR}"
+        return 1
+    fi
+}
+
+function Stop() {
+    local project
+    project="${1}"
+    Check_Project_Name "${1}" || return 1
+
+    echo_info "Stopping Project: ${project}"
+
+    if pushd "${DFX_PROJECTS_DIR}/${project}" > /dev/null 2>&1; then
+        dfx canister stop --all
+        popd > /dev/null 2>&1 || return 1
+    else
+        echo_error "Can't find project: ${project} in ${DFX_PROJECTS_DIR}"
+        return 1
+    fi
+}
+
+function Status() {
+    local project
+    project="${1}"
+    Check_Project_Name "${1}" || return 1
+
+    echo_info "Status of project: ${project}"
+
+    if pushd "${DFX_PROJECTS_DIR}/${project}" > /dev/null 2>&1; then
+        dfx canister status --all
+        popd > /dev/null 2>&1 || return 1
+    else
+        echo_error "Can't find project: ${project} in ${DFX_PROJECTS_DIR}"
+        return 1
+    fi
+}
+
+function Delete() {
+    local project
+    project="${1}"
+    Check_Project_Name "${1}" || return 1
+
+    echo_warn "Deleting Project: ${project}"
+
+    if pushd "${DFX_PROJECTS_DIR}/${project}" > /dev/null 2>&1; then
+        dfx canister delete --all
+        popd > /dev/null 2>&1 || return 1
+    else
+        echo_error "Can't find project: ${project} in ${DFX_PROJECTS_DIR}"
+        return 1
+    fi
+}
+
+function Clean() {
+    local project
+    project="${1}"
+    Check_Project_Name "${1}" || return 1
+
+    echo_info "Cleaning Project: ${project}"
+
+    if pushd "${DFX_PROJECTS_DIR}/${project}" > /dev/null 2>&1; then
+        rm -rf "${DFX_PROJECTS_DIR}/${project}/.dfx"
+        popd > /dev/null 2>&1 || return 1
+    else
+        echo_error "Can't find project: ${project} in ${DFX_PROJECTS_DIR}"
+        return 1
+    fi
+}
+
+function List() {
+    echo_info "Listing your projects"
+    echo_info "Current project folder is: ${DFX_PROJECTS_DIR}"
+
+    if pushd "${DFX_PROJECTS_DIR}" > /dev/null 2>&1; then
+        find . -maxdepth 1 -type d | awk -F"./" '{print $2}'
+        popd > /dev/null 2>&1 || return 1
+    else
+        echo_error "Can't access ${DFX_PROJECTS_DIR}"
+        return 1
+    fi
+}
+
+############################## MAIN ##############################
+
+[ $# -eq 0 ] && Help
+
+while [ "$1" != "" ]; do
+    case $1 in
+        -h | --help )
+            Help
+            exit 0
+            ;;
+        start)
+            shift
+            Start "${1}"
+            exit $?
+            ;;
+        stop)
+            shift
+            Stop "${1}"
+            exit $?
+            ;;
+        status)
+            shift
+            Status "${1}"
+            exit $?
+            ;;
+        delete)
+            shift
+            Delete "${1}"
+            exit $?
+            ;;
+        clean)
+            shift
+            Clean "${1}"
+            exit $?
+            ;;
+        list)
+            List
+            exit $?
+            ;;
+        * )
+            Help
+            exit 1
+            ;;
+    esac
+    shift
+done
