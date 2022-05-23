@@ -13,17 +13,26 @@ This file contains HOWTO instructions for running scripts on your environments
 
 ------------
 ## About
-This image contain tools for **[Smart Contracts](https://smartcontracts.org/ "Smart Contracts")** development. Such as:
+This project contains tools for **[Internet Computer canister](https://smartcontracts.org/ "Smart Contracts")** development to: 
+- Develop more easily on Windows
+- Get started more quickly with a prebuilt development toolkit and
+- Manage multiple dfx projects more efficiently in your CLI
+
+The docker container (which can be found in **[DockerHub](https://hub.docker.com/r/identitylabs/dfxctl)**) comes prebuilt with everything a developer needs to get started building and deploying canisters on the Internet Computer:
 - **dfx**
 - **rust**
 - **nodejs**
 - other libs and tools
-- default project for environment setup checks - it can be **[Internet Identity](https://smartcontracts.org/docs/current/tokenomics/identity-auth/what-is-ic-identity)**
-Also it contain **dfxctl** - wrapper on a **dfx**. Prebuilded images you can found in **[DockerHub](https://hub.docker.com/r/identitylabs/dfxctl)**
+- default project for environment setup checks (we're using **[Internet Identity](https://smartcontracts.org/docs/current/tokenomics/identity-auth/what-is-ic-identity)**, but it could be any)
+
+**dfxctl**, the command line tool to interact with the docker environment, is what you'll be using to manage your projects.
+
 ## Build
 - Open shell in the folder which contains Dockerfile
 - Run `docker build -t dfxctl .`
-- You will get the docker image with the name **dfxctl** after build finished
+- You will get a docker image with the name **dfxctl** after the build finishes
+- Build arguments can be passed to manage versions
+
 ### Build Arguments:
 - **RUST_VERSION** - Version of Rust which will be installed in image.
 - **DFX_VERSION** - Version of DFX which will be installed in image.
@@ -31,9 +40,9 @@ Also it contain **dfxctl** - wrapper on a **dfx**. Prebuilded images you can fou
 - **RUN_INTERNET_IDENTITY** - Use Internet Identity as default_project.
 
 ## Run
-- Create root folder for you projects
-- Put your projects as subfolders
-- Open shell in the root folder which contain your projects
+- Create a projects folder in your root directory (the below assumes **/Projects**)
+- Each project should be a subfolder within the projects folder
+- Open shell in the root directory
 - Run `docker run -v $(pwd):/Projects -p 8000:8000 -p 8080:8080 --name my_dfx dfxctl`
 
 Docker will run `/usr/bin/dfx_run` script, which will run **dfx** with **default_project** project.
@@ -44,14 +53,13 @@ Docker will run `/usr/bin/dfx_run` script, which will run **dfx** with **default
 
 
 ### dfxctl
-Script works as a **wrapper** above dfx and allow auto actions with dfx.
-You need install necessary libs for your project by yourself.
-For manipulating your projects inside this Docker you need use `docker exec` command additionaly to main `docker run` process.
-For example:
+Script works as a **wrapper** above dfx and exposes useful interactivity with dfx.
+Any libraries required for your projects should be installed separately on your own.
+For interacting with your projects inside this Docker container you need use the `docker exec` command in addition to the main `docker run` process:
 - `docker exec my_dfx dfxctl help`  - will show help page of **dfxctl**
 - `docker exec my_dfx dfxctl list`  - will show projects inside Project dir
 
-Whole list of command you can found bellow:
+Entire list of commands:
 ```bash
 DFX Controller script.
 
@@ -68,7 +76,7 @@ list                  List of Projects.
 
 ```
 ## Examples
-- Listing of available projects in mounted folder
+- List available projects in mounted folder
 ```bash
 docker exec -it my_dfx dfxctl list
  2022-05-11 18:44:10 [INFO ] Listing your projects
@@ -79,7 +87,7 @@ project-two
 ```
 
 - Start `project-one`
-*(be sure that you have install all necessary libs before)*
+*(be sure that you have install all necessary libs before this point)*
 ```bash
 docker exec -it my_dfx dfxctl start project-one
  2022-05-11 19:04:33 [INFO ] Starting Project: project-one
